@@ -63,6 +63,11 @@ def weighted_score(option: SubstitutionOption) -> float:
     return (0.7 * option.dish_fit) + (0.3 * option.diet_fit)
 
 
+def is_direct_substitution(option: SubstitutionOption) -> bool:
+    reason = (option.reason or "").lower()
+    return "not a direct substitution" not in reason and "isn't a direct substitution" not in reason
+
+
 def add_fallback_options(
     *,
     options: List[SubstitutionOption],
@@ -90,7 +95,7 @@ def add_fallback_options(
         options.append(
             SubstitutionOption(
                 substitute=cand,
-                reason=f"Allowed ingredient (role-matched fallback) that may work as a {role} substitute.",
+                reason=f"Allowed ingredient with a similar role that could work as a {role} substitute.",
                 adjustment=None,
                 confidence="low",
                 diet_fit=3,
@@ -124,6 +129,8 @@ def postprocess_batch(
         filtered = [
             opt for opt in item.options
             if normalize_name(opt.substitute) != normalize_name(target)
+            and is_direct_substitution(opt)
+            and opt.confidence != "low"
         ]
         if not allow_out_of_list:
             filtered = [
@@ -154,6 +161,8 @@ def postprocess_batch(
             min_options=3,
         )
 
+        filtered = [opt for opt in filtered if opt.confidence != "low"]
+
         item.options = sorted(
             filtered,
             key=lambda o: (weighted_score(o), CONFIDENCE_ORDER.get(o.confidence, 0)),
@@ -168,7 +177,6 @@ def run_substitutions(
     annotations: List,
     *,
     allowed_ingredients: List[str],
-    goal: str | None,
     diet_name: str | None,
     diet_instructions: str | None,
     allow_out_of_list: bool,
@@ -177,7 +185,6 @@ def run_substitutions(
         parsed,
         annotations,
         allowed_ingredients=allowed_ingredients,
-        goal=goal,
         diet_name=diet_name,
         diet_instructions=diet_instructions,
         allow_out_of_list=allow_out_of_list,
@@ -188,6 +195,32 @@ def run_substitutions(
         allowed_ingredients=allowed_ingredients,
         allow_out_of_list=allow_out_of_list,
     )
+
+
+def precompute_substitutions(
+    parsed: ParsedRecipe,
+    annotated: AnnotatedRecipe,
+    *,
+    allowed_ingredients: List[str],
+    diet_name: str | None,
+    diet_instructions: str | None,
+    allow_out_of_list: bool,
+) -> dict[Stage, SubstitutionBatch]:
+    stages: list[Stage] = ["primary", "secondary", "seasoning_optional"]
+    results: dict[Stage, SubstitutionBatch] = {}
+    for stage in stages:
+        annotations = stage_annotations(annotated, stage)
+        if not annotations:
+            continue
+        results[stage] = run_substitutions(
+            parsed,
+            annotations,
+            allowed_ingredients=allowed_ingredients,
+            diet_name=diet_name,
+            diet_instructions=diet_instructions,
+            allow_out_of_list=allow_out_of_list,
+        )
+    return results
 
 
 def run_rewrite(parsed: ParsedRecipe, swaps: List[SwapChoice]) -> RewrittenRecipe:

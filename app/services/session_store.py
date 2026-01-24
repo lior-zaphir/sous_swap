@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from app.models.core import AnnotatedRecipe, ParsedRecipe, Stage, SwapChoice
+from app.models.core import AnnotatedRecipe, ParsedRecipe, Stage, SwapChoice, SubstitutionBatch
 
 
 STAGE_ORDER: List[Stage] = ["primary", "secondary", "seasoning_optional"]
@@ -16,12 +16,12 @@ class SessionState:
     annotated_recipe: AnnotatedRecipe
     current_recipe: ParsedRecipe
     allowed_ingredients: List[str]
-    goal: Optional[str]
     diet_name: Optional[str]
     diet_instructions: Optional[str]
     allow_out_of_list: bool
     stage_index: int = 0
     swap_history: List[SwapChoice] = field(default_factory=list)
+    precomputed_substitutions: Optional[Dict[Stage, "SubstitutionBatch"]] = None
 
     @property
     def stage_order(self) -> List[Stage]:
