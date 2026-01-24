@@ -54,7 +54,7 @@ It's not traditional, but for extra richness, add 1 tablespoon butter when you t
 DIET_PROFILES = {
     "0": ("None", "No additional dietary restrictions."),
     "1": (
-        "Celiac (no gluten)",
+        "Gluten Free",
         "Avoid all gluten-containing ingredients: wheat, barley, rye, spelt, farro, durum, semolina, "
         "bulgur, couscous, farina, malt, brewer's yeast, most soy sauce unless labeled gluten-free. "
         "Prefer gluten-free grains and starches (rice, corn, quinoa, buckwheat, certified GF oats). "
@@ -158,7 +158,6 @@ def main() -> None:
                 "salt",
                 "whole wheat pasta",
             ],
-            "goal": "healthier",
             "diet_profile": diet_profile,
             "allow_out_of_list": allow_out_of_list,
         },
