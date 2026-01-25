@@ -1,7 +1,7 @@
 # parse_recipe.py
 from __future__ import annotations
-from llm_client import call_structured
-from schemas import ParsedRecipe
+from src.llm_client import call_structured
+from src.schemas import ParsedRecipe
 
 SYSTEM = """You extract structured cooking information from recipe text.
 Return ONLY data that can be supported by the input. Do not invent ingredients or steps.

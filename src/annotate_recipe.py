@@ -1,7 +1,7 @@
 # annotate_recipe.py
 from __future__ import annotations
-from llm_client import call_structured
-from schemas import ParsedRecipe, AnnotatedRecipe
+from src.llm_client import call_structured
+from src.schemas import ParsedRecipe, AnnotatedRecipe
 
 SYSTEM = """You label recipe ingredients for an interactive ingredient-editing wizard.
 

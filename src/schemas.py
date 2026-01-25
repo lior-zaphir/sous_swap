@@ -86,6 +86,7 @@ class SubstitutionBatch(BaseModel):
 class SwapChoice(BaseModel):
     original: str
     chosen: str
+    action: Literal["swap", "add"] = "swap"
 
 
 class RewrittenRecipe(BaseModel):

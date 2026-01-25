@@ -442,7 +442,15 @@ export default function Home() {
   );
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<"setup" | "flow" | "review">("setup");
+  const [screen, setScreen] = useState<"setup" | "flow" | "review" | "final">(
+    "setup"
+  );
+  const [parsedRecipe, setParsedRecipe] = useState<{
+    title?: string | null;
+    servings?: string | null;
+    ingredients: Array<{ name: string; quantity?: string | null; unit?: string | null; notes?: string | null }>;
+    instructions: string[];
+  } | null>(null);
   const [stage, setStage] = useState<string | null>(null);
   const [stageIngredients, setStageIngredients] = useState<
     Array<{ ingredient_name: string; role: string; importance: string }>
@@ -492,6 +500,11 @@ export default function Home() {
   } | null>(null);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [reviewSelected, setReviewSelected] = useState<string | null>(null);
+  const [finalRecipe, setFinalRecipe] = useState<{
+    title?: string | null;
+    ingredients: Array<{ name: string; quantity?: string | null; unit?: string | null; notes?: string | null }>;
+    instructions: string[];
+  } | null>(null);
 
   const selectedDiet = useMemo(() => DIET_PROFILES[dietIndex], [dietIndex]);
 
@@ -682,6 +695,8 @@ export default function Home() {
     setFlowError(null);
     setFlowInitialized(false);
     setFinalizing(false);
+    setParsedRecipe(null);
+    setFinalRecipe(null);
     setAnnotatedRecipe(null);
     setStageOrder([]);
     setStageIndex(0);
@@ -713,6 +728,7 @@ export default function Home() {
       const data = await resp.json();
       setSessionId(data.session_id ?? null);
       setStatus("done");
+      setParsedRecipe(data.parsed_recipe ?? null);
       setAnnotatedRecipe(data.annotated_recipe ?? null);
       setStageOrder(data.stage_order ?? []);
       setStageIndex(0);
@@ -968,8 +984,11 @@ export default function Home() {
         const text = await resp.text();
         throw new Error(text || "Finalize failed");
       }
+      const data = await resp.json();
+      setFinalRecipe(data.current_recipe ?? null);
       setFinalizing(false);
       setFlowStatus("done");
+      setScreen("final");
     } catch (err) {
       setFinalizing(false);
       setFlowStatus("error");
@@ -993,6 +1012,14 @@ export default function Home() {
   const selectedReviewItem = reviewSelected
     ? reviewItems.find((item) => item.ingredient_name === reviewSelected)
     : null;
+
+  const originalIngredientNames = useMemo(() => {
+    const names = parsedRecipe?.ingredients ?? [];
+    return new Set(names.map((item) => normalizeIngredient(item.name)));
+  }, [parsedRecipe]);
+
+  const isNewIngredient = (name: string) =>
+    !originalIngredientNames.has(normalizeIngredient(name));
 
   return (
     <>
@@ -1324,7 +1351,7 @@ export default function Home() {
               )}
             </div>
           </section>
-        ) : (
+        ) : screen === "review" ? (
           <>
             <section className="grid gap-6 lg:grid-cols-[0.6fr_0.9fr]">
               <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -1485,6 +1512,69 @@ export default function Home() {
               </button>
             </div>
           </>
+        ) : (
+          <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">Final Recipe</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Review the updated ingredients and instructions.
+              </p>
+              <div className="mt-4 space-y-3 text-sm">
+                {(finalRecipe?.title || parsedRecipe?.title) && (
+                  <div className="text-base font-semibold text-zinc-900">
+                    {finalRecipe?.title || parsedRecipe?.title}
+                  </div>
+                )}
+                {parsedRecipe?.servings && (
+                  <div className="text-xs text-zinc-500">
+                    Servings: {parsedRecipe.servings}
+                  </div>
+                )}
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  Ingredients
+                </div>
+                <div className="space-y-2">
+                  {(finalRecipe?.ingredients ?? []).map((ing) => {
+                    const q = ing.quantity ? `${ing.quantity} ` : "";
+                    const u = ing.unit ? `${ing.unit} ` : "";
+                    const n = ing.notes ? `, ${ing.notes}` : "";
+                    const isNew = isNewIngredient(ing.name);
+                    return (
+                      <div
+                        key={`${ing.name}-${q}-${u}-${n}`}
+                        className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2"
+                      >
+                        <div className="text-sm text-zinc-900">
+                          {`${q}${u}${ing.name}${n}`.trim()}
+                        </div>
+                        {isNew && (
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
+                            New
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h3 className="text-base font-semibold text-zinc-900">
+                Instructions
+              </h3>
+              <div className="mt-4 space-y-3 text-sm text-zinc-700">
+                {(finalRecipe?.instructions ?? []).map((step, idx) => (
+                  <div key={`${idx}-${step}`} className="flex gap-3">
+                    <div className="text-xs font-semibold text-zinc-400">
+                      {idx + 1}.
+                    </div>
+                    <div>{step}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         )}
 
       </div>

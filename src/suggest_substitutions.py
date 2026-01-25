@@ -1,8 +1,8 @@
 # suggest_substitutions.py
 from __future__ import annotations
 from typing import List, Optional
-from llm_client import call_structured
-from schemas import ParsedRecipe, IngredientAnnotation, SubstitutionSet, SubstitutionBatch
+from src.llm_client import call_structured
+from src.schemas import ParsedRecipe, IngredientAnnotation, SubstitutionSet, SubstitutionBatch
 
 SYSTEM = """You propose ingredient substitutions for a specific recipe ingredient.
 
@@ -10,6 +10,9 @@ Hard rules:
 - Return at most 5 options.
 - Each option must keep the ingredient's FUNCTION in the recipe (e.g., thickener vs aromatic).
 - Do NOT propose unrelated ingredients or change the dish type.
+- Indirect substitutions (e.g., "add more pasta to account for the lack of cheese") must NOT be included as substitutions.
+- Each option must be a direct replacement for the target ingredient, not for any other ingredient in the recipe.
+- Do NOT mention other ingredient names as the substitution target (e.g., don't explain a cheese swap by talking about pasta).
 - If no good substitutes exist, return 1 option: the original ingredient itself, with low confidence and explanation.
 - Do NOT include the original ingredient if you can propose any other valid options.
 - Rank options by how well they satisfy the dietary rules and goal, best first.

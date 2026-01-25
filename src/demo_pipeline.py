@@ -1,12 +1,12 @@
 # demo_pipeline.py
 from __future__ import annotations
 
-from parse_recipe import parse_recipe
-from annotate_recipe import annotate_recipe
-from suggest_substitutions import suggest_substitutions_batch
-from rewrite_recipe import rewrite_recipe
+from src.parse_recipe import parse_recipe
+from src.annotate_recipe import annotate_recipe
+from src.suggest_substitutions import suggest_substitutions_batch
+from src.rewrite_recipe import rewrite_recipe
 
-from schemas import SwapChoice, SubstitutionOption
+from src.schemas import SwapChoice, SubstitutionOption
 import re
 
 RECIPE_TEXT = """Spaghetti Aglio e Olio
@@ -98,7 +98,7 @@ def prompt_allow_out_of_list() -> bool:
         print("Please enter y or n.")
 
 DIET_PROFILES = {
-    1: ("Celiac (no gluten)", (
+    1: ("Gluten Free", (
         "Avoid all gluten-containing ingredients: wheat, barley, rye, spelt, farro, durum, semolina, "
         "bulgur, couscous, farina, malt, brewer's yeast, most soy sauce unless labeled gluten-free. "
         "Prefer gluten-free grains and starches (rice, corn, quinoa, buckwheat, certified GF oats). "
