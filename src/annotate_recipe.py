@@ -18,6 +18,12 @@ Guidance:
 - primary = ingredients that define the dish structure (base/protein/main veg)
 - secondary = supporting components (sauce components, side veg, mix-ins)
 - seasoning_optional = spices/herbs, garnish, small flavoring agents
+- Map common pantry items to specific roles when possible (avoid "other"):
+  - salt, pepper, dried spices, herbs -> spice_herb
+  - oils, butter, ghee -> fat
+  - pasta/noodles/rice/bread/grains -> base_starch
+  - cheese/milk/cream/yogurt -> dairy
+  - vinegar/lemon/lime -> acid
 """
 
 def annotate_recipe(parsed: ParsedRecipe) -> AnnotatedRecipe:

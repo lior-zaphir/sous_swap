@@ -7,6 +7,7 @@ from app.models.core import (
     AnnotatedRecipe,
     IngredientAnnotation,
     ParsedRecipe,
+    RecipePreview,
     RewrittenRecipe,
     Stage,
     SwapChoice,
@@ -60,3 +61,8 @@ class ApplySwapsResponse(BaseModel):
 
 class FinalizeRequest(BaseModel):
     swaps: Optional[List[SwapChoice]] = None
+
+
+class RecipePreviewResponse(BaseModel):
+    items: List[RecipePreview]
+    failures: List[str] = []

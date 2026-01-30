@@ -9,6 +9,7 @@ from app.models.api import (
     CreateSessionRequest,
     CreateSessionResponse,
     FinalizeRequest,
+    RecipePreviewResponse,
     StageResponse,
     SubstitutionsRequest,
     SubstitutionsResponse,
@@ -23,6 +24,7 @@ from app.services.pipeline import (
     stage_annotations,
     rewritten_to_parsed,
 )
+from app.services.web_recipes import build_recipe_previews
 from app.services.session_store import InMemorySessionStore, SessionState
 
 
@@ -162,3 +164,17 @@ def finalize_recipe(
         current_recipe=current,
         swap_history=state.swap_history,
     )
+
+
+@router.get("/sessions/{session_id}/web-recipes", response_model=RecipePreviewResponse)
+def get_web_recipes(session_id: str, limit: int = 5) -> RecipePreviewResponse:
+    state = store.get(session_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    previews, failures = build_recipe_previews(
+        state.current_recipe,
+        state.swap_history,
+        limit=limit,
+    )
+    return RecipePreviewResponse(items=previews, failures=failures)

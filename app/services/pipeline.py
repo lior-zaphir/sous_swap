@@ -22,13 +22,41 @@ IMPORTANCE_ORDER = {"must": 0, "should": 1, "optional": 2}
 CONFIDENCE_ORDER = {"low": 1, "medium": 2, "high": 3}
 
 ROLE_KEYWORDS = {
-    "base_starch": ["pasta", "noodle", "rice", "grain", "flour", "bread", "tortilla", "quinoa", "couscous", "potato"],
+    "base_starch": [
+        "pasta",
+        "noodle",
+        "rice",
+        "grain",
+        "flour",
+        "bread",
+        "tortilla",
+        "quinoa",
+        "couscous",
+        "potato",
+        "spaghetti",
+        "linguine",
+        "fettuccine",
+        "penne",
+        "rigatoni",
+        "fusilli",
+        "farfalle",
+        "macaroni",
+        "bucatini",
+        "vermicelli",
+        "tagliatelle",
+        "angel hair",
+        "orzo",
+        "udon",
+        "soba",
+        "ramen",
+        "gnocchi",
+    ],
     "protein": ["chicken", "beef", "pork", "tofu", "tempeh", "fish", "shrimp", "egg", "lentil", "bean", "turkey"],
     "vegetable": ["carrot", "broccoli", "spinach", "pepper", "tomato", "zucchini", "mushroom", "onion"],
     "sauce_liquid": ["broth", "stock", "sauce", "milk", "cream", "wine", "tomato", "coconut"],
     "fat": ["oil", "butter", "ghee", "lard"],
     "aromatic": ["garlic", "onion", "shallot", "ginger", "scallion", "leek"],
-    "spice_herb": ["pepper", "chili", "paprika", "cumin", "coriander", "basil", "oregano", "thyme", "parsley", "cilantro", "dill", "rosemary"],
+    "spice_herb": ["salt", "pepper", "chili", "paprika", "cumin", "coriander", "basil", "oregano", "thyme", "parsley", "cilantro", "dill", "rosemary"],
     "sweetener": ["sugar", "honey", "maple", "syrup", "agave"],
     "acid": ["vinegar", "lemon", "lime"],
     "binder_thickener": ["flour", "cornstarch", "starch", "roux", "egg", "gelatin"],
@@ -60,12 +88,16 @@ def normalize_name(value: str) -> str:
 
 
 def weighted_score(option: SubstitutionOption) -> float:
-    return (0.7 * option.dish_fit) + (0.3 * option.diet_fit)
+    return (0.4 * option.dish_fit) + (0.6 * option.diet_fit)
 
 
 def is_direct_substitution(option: SubstitutionOption) -> bool:
     reason = (option.reason or "").lower()
-    return "not a direct substitution" not in reason and "isn't a direct substitution" not in reason
+    return (
+        "not a direct substitution" not in reason
+        and "isn't a direct substitution" not in reason
+        and "not a direct substitute" not in reason
+    )
 
 
 def add_fallback_options(
@@ -115,6 +147,48 @@ def postprocess_batch(
     ann_by_name = {a.ingredient_name.lower(): a for a in annotations}
     allowed_set = {normalize_name(a) for a in allowed_ingredients}
 
+    def filter_by_role(
+        options: List[SubstitutionOption],
+        role: str,
+        allowed: set[str],
+    ) -> List[SubstitutionOption]:
+        keywords = ROLE_KEYWORDS.get(role, [])
+        if not keywords:
+            return options
+        filtered = [
+            opt
+            for opt in options
+            if any(k in normalize_name(opt.substitute) for k in keywords)
+        ]
+        return filtered
+
+    def assign_fit_ranks(options: List[SubstitutionOption]) -> None:
+        diet_sorted = sorted(
+            options,
+            key=lambda opt: (
+                opt.diet_fit,
+                opt.dish_fit,
+                CONFIDENCE_ORDER.get(opt.confidence, 0),
+                opt.substitute.lower(),
+            ),
+            reverse=True,
+        )
+        for idx, opt in enumerate(diet_sorted, start=1):
+            opt.diet_fit_rank = idx
+
+        dish_sorted = sorted(
+            options,
+            key=lambda opt: (
+                opt.dish_fit,
+                opt.diet_fit,
+                CONFIDENCE_ORDER.get(opt.confidence, 0),
+                opt.substitute.lower(),
+            ),
+            reverse=True,
+        )
+        for idx, opt in enumerate(dish_sorted, start=1):
+            opt.dish_fit_rank = idx
+
     for item in batch.items:
         target = item.ingredient_name
         ann = ann_by_name.get(target.lower())
@@ -137,6 +211,8 @@ def postprocess_batch(
                 opt for opt in filtered
                 if normalize_name(opt.substitute) in allowed_set
             ]
+
+        filtered = filter_by_role(filtered, role, allowed_set)
 
         if not filtered:
             if original_option:
@@ -161,7 +237,11 @@ def postprocess_batch(
             min_options=3,
         )
 
-        filtered = [opt for opt in filtered if opt.confidence != "low"]
+        non_low = [opt for opt in filtered if opt.confidence != "low"]
+        if non_low:
+            filtered = non_low
+
+        assign_fit_ranks(filtered)
 
         item.options = sorted(
             filtered,

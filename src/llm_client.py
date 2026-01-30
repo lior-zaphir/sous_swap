@@ -69,3 +69,29 @@ def call_structured(
         time.sleep(sleep)
 
     raise LLMError(f"Structured call failed after {max_retries} retries: {last_err}")
+
+
+def run_web_search(query: str, *, model: str = DEFAULT_MODEL) -> str:
+    """
+    Uses the OpenAI web search tool (if available) and returns a text summary.
+    """
+    try:
+        resp = client.responses.create(
+            model=model,
+            input=[{"role": "user", "content": query}],
+            tools=[{"type": "web_search_preview"}],
+            temperature=0.2,
+        )
+        output_text = getattr(resp, "output_text", None)
+        if output_text:
+            return output_text
+        # Fallback for SDK variants: try concatenating text outputs.
+        parts: list[str] = []
+        for item in getattr(resp, "output", []) or []:
+            for content in getattr(item, "content", []) or []:
+                text = getattr(content, "text", None)
+                if text:
+                    parts.append(text)
+        return "\n".join(parts)
+    except Exception as exc:
+        raise LLMError(f"Web search call failed: {exc}") from exc

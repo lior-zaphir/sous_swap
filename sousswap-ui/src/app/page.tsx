@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  Crown,
   Drumstick,
   Droplet,
   Flame,
   Leaf,
   Milk,
   PillBottle,
+  Star,
   Wheat,
 } from "lucide-react";
 
@@ -32,47 +34,9 @@ const API_BASE = (() => {
   return raw;
 })();
 
-const DEFAULT_RECIPE = `Spaghetti Aglio e Olio
-No two aglio e olio recipes are alike, but this one is pretty true to the classic method. The key is slowly toasting the garlic slices to a perfect golden brown in the olive oil. If it's too light, you don't get the full flavor and if it's too dark it gets bitter. My advice? Do it perfectly.
-
-By John Mitzewich
-Prep Time: 10 mins
-Cook Time: 15 mins
-Total Time: 25 mins
-Servings: 4
-Ingredients
-1 pound uncooked spaghetti
-
-1/2 cup olive oil
-
-6 cloves garlic, thinly sliced
-
-1/4 teaspoon red pepper flakes, or to taste
-
-salt and freshly ground black pepper to taste
-
-1/4 cup chopped fresh Italian parsley
-
-1 cup finely grated Parmigiano-Reggiano cheese
-
-Directions
-Gather all ingredients.
-
-Bring a large pot of lightly salted water to a boil. Cook spaghetti in the boiling water, stirring occasionally until cooked through but firm to the bite, about 10 to 12 minutes. Drain and transfer to a pasta bowl.
-
-While the pasta is cooking, combine olive oil and garlic in a cold skillet.
-
-Cook over medium heat to slowly toast garlic, about 10 minutes. Reduce heat to medium-low when olive oil begins to bubble. Cook and stir until garlic is golden brown, about another 5 minutes. Remove from heat.
-
-Stir red pepper flakes, salt, and black pepper into pasta.
-
-Pour in hot olive oil and garlic, and sprinkle on Italian parsley and half of the Parmigiano-Reggiano cheese; toss until combined.
-
-Serve pasta topped with the remaining Parmigiano-Reggiano cheese.
-
-Recipe Tip
-It's not traditional, but for extra richness, add 1 tablespoon butter when you toss pasta with cheese.
-`;
+const DEFAULT_RECIPE = "";
+const DEFAULT_RECIPE_URL =
+  "https://www.allrecipes.com/recipe/222000/spaghetti-aglio-e-olio/";
 
 const BASIC_INGREDIENTS = [
   "olive oil",
@@ -377,6 +341,34 @@ type SubstitutionOption = {
   confidence?: string;
   diet_fit?: number;
   dish_fit?: number;
+  diet_fit_rank?: number;
+  dish_fit_rank?: number;
+};
+
+type RecipePreview = {
+  url: string;
+  title?: string | null;
+  site_name?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  used_ingredients?: string[] | null;
+};
+
+const normalizeExternalUrl = (value: string) => {
+  const trimmed = value.trim().replace(/^"+|"+$/g, "");
+  if (!trimmed) {
+    return "";
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  if (trimmed.startsWith("www.")) {
+    return `https://${trimmed}`;
+  }
+  return `https://${trimmed.replace(/^\/+/, "")}`;
 };
 
 const PixelPot = ({ size = "lg" }: { size?: PixelPotSize }) => (
@@ -431,12 +423,18 @@ const mergeReviewItems = (prev: ReviewItem[], next: ReviewItem[]) => {
 
 export default function Home() {
   const [recipeText, setRecipeText] = useState(DEFAULT_RECIPE);
+  const [recipeUrl, setRecipeUrl] = useState(DEFAULT_RECIPE_URL);
+  const [autoLoadedRecipe, setAutoLoadedRecipe] = useState(false);
+  const [urlStatus, setUrlStatus] = useState<"idle" | "loading" | "error">(
+    "idle"
+  );
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [allowedInput, setAllowedInput] = useState("");
   const [allowedIngredients, setAllowedIngredients] =
     useState<string[]>(DEFAULT_ALLOWED);
   const [dietIndex, setDietIndex] = useState(0);
   const [allowOutOfList, setAllowOutOfList] = useState(false);
-  const [preloadSubstitutions, setPreloadSubstitutions] = useState(true);
+  const preloadSubstitutions = true;
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
   );
@@ -505,8 +503,20 @@ export default function Home() {
     ingredients: Array<{ name: string; quantity?: string | null; unit?: string | null; notes?: string | null }>;
     instructions: string[];
   } | null>(null);
+  const [webRecipes, setWebRecipes] = useState<RecipePreview[]>([]);
+  const [webRecipesStatus, setWebRecipesStatus] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
+  const [webRecipesError, setWebRecipesError] = useState<string | null>(null);
 
   const selectedDiet = useMemo(() => DIET_PROFILES[dietIndex], [dietIndex]);
+
+  useEffect(() => {
+    if (!autoLoadedRecipe && recipeUrl) {
+      setAutoLoadedRecipe(true);
+      fetchRecipeFromUrl();
+    }
+  }, [autoLoadedRecipe, recipeUrl]);
 
   useEffect(() => {
     if (
@@ -539,6 +549,11 @@ export default function Home() {
       setFlowStatus("ready");
     }
   }, [screen, flowStatus, precomputedStore, batchItems.length]);
+  useEffect(() => {
+    if (screen === "final" && sessionId && webRecipesStatus === "idle") {
+      void fetchWebRecipes(sessionId);
+    }
+  }, [screen, sessionId, webRecipesStatus]);
   const suggestions = useMemo(() => {
     const query = normalizeIngredient(allowedInput);
     if (!query) {
@@ -695,6 +710,8 @@ export default function Home() {
     setFlowError(null);
     setFlowInitialized(false);
     setFinalizing(false);
+    setUrlStatus("idle");
+    setUrlError(null);
     setParsedRecipe(null);
     setFinalRecipe(null);
     setAnnotatedRecipe(null);
@@ -996,6 +1013,54 @@ export default function Home() {
     }
   };
 
+  const fetchRecipeFromUrl = async () => {
+    if (!recipeUrl.trim()) {
+      setUrlError("Enter a recipe URL.");
+      setUrlStatus("error");
+      return;
+    }
+    setUrlStatus("loading");
+    setUrlError(null);
+    try {
+      const resp = await fetch(`/api/recipe?url=${encodeURIComponent(recipeUrl)}`);
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || "Failed to fetch recipe");
+      }
+      const data = await resp.json();
+      if (!data.recipe_text) {
+        throw new Error("No recipe text returned");
+      }
+      setRecipeText(data.recipe_text);
+      setUrlStatus("idle");
+    } catch (err) {
+      setUrlStatus("error");
+      setUrlError(err instanceof Error ? err.message : "Failed to fetch recipe");
+    }
+  };
+
+  const fetchWebRecipes = async (activeSessionId: string) => {
+    setWebRecipesStatus("loading");
+    setWebRecipesError(null);
+    try {
+      const resp = await fetch(
+        `${API_BASE}/v1/sessions/${activeSessionId}/web-recipes?limit=5`
+      );
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || "Failed to fetch web recipes");
+      }
+      const data = await resp.json();
+      setWebRecipes(Array.isArray(data.items) ? data.items : []);
+      setWebRecipesStatus("done");
+    } catch (err) {
+      setWebRecipesStatus("error");
+      setWebRecipesError(
+        err instanceof Error ? err.message : "Failed to fetch web recipes"
+      );
+    }
+  };
+
   const stageLabel = (value: string | null) => {
     if (!value) {
       return "Ingredients";
@@ -1012,6 +1077,69 @@ export default function Home() {
   const selectedReviewItem = reviewSelected
     ? reviewItems.find((item) => item.ingredient_name === reviewSelected)
     : null;
+
+  const selectBestOption = (
+    options: SubstitutionOption[],
+    rankKey: "diet_fit_rank" | "dish_fit_rank",
+    fitKey: "diet_fit" | "dish_fit"
+  ) => {
+    const ranked = options
+      .filter((opt) => typeof opt[rankKey] === "number")
+      .sort(
+        (a, b) => (a[rankKey] as number) - (b[rankKey] as number)
+      );
+    if (ranked.length > 0) {
+      return ranked[0].substitute;
+    }
+    const fitValues = options
+      .map((opt) => opt[fitKey])
+      .filter((value): value is number => typeof value === "number");
+    if (fitValues.length === 0) {
+      return null;
+    }
+    const bestFit = Math.max(...fitValues);
+    return options.find((opt) => opt[fitKey] === bestFit)?.substitute ?? null;
+  };
+
+  const currentItem = batchItems[currentIndex];
+  const filteredCurrentOptions = useMemo(() => {
+    if (!currentItem) {
+      return [];
+    }
+    return currentItem.options.filter(
+      (opt) =>
+        opt.substitute.toLowerCase() !==
+          currentItem.ingredient_name.toLowerCase() && isDirectSubstitution(opt.reason)
+    );
+  }, [currentItem]);
+  const bestCurrentDietSubstitute = useMemo(
+    () => selectBestOption(filteredCurrentOptions, "diet_fit_rank", "diet_fit"),
+    [filteredCurrentOptions]
+  );
+  const bestCurrentDishSubstitute = useMemo(
+    () => selectBestOption(filteredCurrentOptions, "dish_fit_rank", "dish_fit"),
+    [filteredCurrentOptions]
+  );
+
+  const filteredReviewOptions = useMemo(() => {
+    if (!selectedReviewItem) {
+      return [];
+    }
+    return selectedReviewItem.options.filter(
+      (opt) =>
+        opt.substitute.toLowerCase() !==
+          selectedReviewItem.ingredient_name.toLowerCase() &&
+        isDirectSubstitution(opt.reason)
+    );
+  }, [selectedReviewItem]);
+  const bestReviewDietSubstitute = useMemo(
+    () => selectBestOption(filteredReviewOptions, "diet_fit_rank", "diet_fit"),
+    [filteredReviewOptions]
+  );
+  const bestReviewDishSubstitute = useMemo(
+    () => selectBestOption(filteredReviewOptions, "dish_fit_rank", "dish_fit"),
+    [filteredReviewOptions]
+  );
 
   const originalIngredientNames = useMemo(() => {
     const names = parsedRecipe?.ingredients ?? [];
@@ -1050,8 +1178,35 @@ export default function Home() {
               <p className="mt-1 text-sm text-slate-500">
                 Provide a full recipe or paste from a site.
               </p>
+              <div className="mt-4 rounded-xl border border-[#e6e2da] bg-white p-4">
+                <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Import from URL
+                </div>
+                <div className="mt-2 flex flex-col gap-2">
+                  <input
+                    className="w-full rounded-lg border border-[#e6e2da] bg-[#faf9f6] px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                    placeholder="Paste a recipe URL"
+                    value={recipeUrl}
+                    onChange={(event) => setRecipeUrl(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={fetchRecipeFromUrl}
+                    disabled={urlStatus === "loading"}
+                  >
+                    {urlStatus === "loading" ? "Importing..." : "Import Recipe"}
+                  </button>
+                  {urlStatus === "error" && urlError && (
+                    <div className="text-xs text-rose-600">{urlError}</div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">
+                Imported recipe text
+              </div>
               <textarea
-                className="mt-4 h-[520px] w-full resize-none rounded-xl border border-[#e6e2da] bg-[#faf9f6] p-4 text-sm leading-relaxed outline-none focus:border-emerald-500"
+                className="mt-2 h-[520px] w-full resize-none rounded-xl border border-[#e6e2da] bg-[#faf9f6] p-4 text-sm leading-relaxed outline-none focus:border-emerald-500"
                 value={recipeText}
                 onChange={(event) => setRecipeText(event.target.value)}
               />
@@ -1062,7 +1217,7 @@ export default function Home() {
               <div className="mt-4 space-y-5 text-sm">
                 <div>
                   <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Allowed ingredients
+                    My Ingredients
                   </label>
                   <div className="mt-2 flex gap-2">
                     <div className="relative flex-1">
@@ -1093,7 +1248,7 @@ export default function Home() {
                               </span>
                             </button>
                           ))}
-                        </div>
+        </div>
                       )}
                     </div>
                     <button
@@ -1159,18 +1314,6 @@ export default function Home() {
                   />
                   <span className="text-sm">
                     Allow suggestions outside my list
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 rounded-lg border border-[#e6e2da] bg-white px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={preloadSubstitutions}
-                    onChange={(event) =>
-                      setPreloadSubstitutions(event.target.checked)
-                    }
-                  />
-                  <span className="text-sm">
-                    Precompute all suggestions up front (slower start, faster flow)
                   </span>
                 </label>
               </div>
@@ -1282,22 +1425,31 @@ export default function Home() {
                         No alternatives suggested. Keep the original ingredient.
                       </div>
                     )}
-                    {batchItems[currentIndex].options
-                      .filter(
-                        (opt) =>
-                          opt.substitute.toLowerCase() !==
-                          batchItems[currentIndex].ingredient_name.toLowerCase() &&
-                          isDirectSubstitution(opt.reason)
-                      )
-                      .map((opt) => (
+                    {filteredCurrentOptions.map((opt) => (
                       <div
                         key={opt.substitute}
                         className="rounded-xl border border-[#e6e2da] bg-white p-4"
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm font-semibold text-zinc-900">
-                              {opt.substitute}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="text-sm font-semibold text-zinc-900">
+                                {opt.substitute}
+                              </div>
+                              {bestCurrentDishSubstitute &&
+                                opt.substitute === bestCurrentDishSubstitute && (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                    <Crown className="h-3 w-3" />
+                                    Best dish fit
+                                  </span>
+                                )}
+                              {bestCurrentDietSubstitute &&
+                                opt.substitute === bestCurrentDietSubstitute && (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                    <Star className="h-3 w-3" />
+                                    Best diet fit
+                                  </span>
+                                )}
                             </div>
                             {opt.reason && (
                               <p className="mt-1 text-xs text-zinc-500">
@@ -1400,8 +1552,8 @@ export default function Home() {
                             {bubbleText}
                           </button>
                         </div>
-                      </div>
-                    );
+    </div>
+  );
                   })}
                 </div>
               </div>
@@ -1431,22 +1583,31 @@ export default function Home() {
                         </button>
                       </div>
                       <div className="mt-4 space-y-3">
-                        {selectedReviewItem.options
-                          .filter(
-                            (opt) =>
-                              opt.substitute.toLowerCase() !==
-                                selectedReviewItem.ingredient_name.toLowerCase() &&
-                              isDirectSubstitution(opt.reason)
-                          )
-                          .map((opt) => (
+                    {filteredReviewOptions.map((opt) => (
                           <div
                             key={opt.substitute}
                             className="rounded-xl border border-[#e6e2da] bg-white p-4"
                           >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-sm font-semibold text-zinc-900">
-                                    {opt.substitute}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <div className="text-sm font-semibold text-zinc-900">
+                                      {opt.substitute}
+                                    </div>
+                                    {bestReviewDishSubstitute &&
+                                      opt.substitute === bestReviewDishSubstitute && (
+                                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                          <Crown className="h-3 w-3" />
+                                          Best dish fit
+                                        </span>
+                                      )}
+                                    {bestReviewDietSubstitute &&
+                                      opt.substitute === bestReviewDietSubstitute && (
+                                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                          <Star className="h-3 w-3" />
+                                          Best diet fit
+                                        </span>
+                                      )}
                                   </div>
                                   {opt.reason && (
                                   <p className="mt-1 text-xs text-slate-500">
@@ -1518,7 +1679,7 @@ export default function Home() {
             )}
           </>
         ) : (
-          <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
+          <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr_0.8fr]">
             <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <h2 className="text-lg font-semibold">Final Recipe</h2>
               <p className="mt-1 text-sm text-zinc-500">
@@ -1577,6 +1738,69 @@ export default function Home() {
                     <div>{step}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+              <h3 className="text-base font-semibold text-zinc-900">
+                Better-fit recipes
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                Recipes that already use your swapped ingredients.
+              </p>
+              <div className="mt-4 space-y-3 text-sm text-zinc-700">
+                {webRecipesStatus === "loading" && (
+                  <div className="text-sm text-zinc-500">
+                    Finding the best matches...
+                  </div>
+                )}
+                {webRecipesStatus === "error" && (
+                  <div className="text-sm text-rose-600">
+                    {webRecipesError ?? "Failed to load recipe links."}
+                  </div>
+                )}
+                {webRecipesStatus !== "loading" &&
+                  webRecipesStatus !== "error" &&
+                  webRecipes.length === 0 && (
+                    <div className="text-sm text-zinc-500">
+                      No matching recipes found yet.
+                    </div>
+                  )}
+                {webRecipes
+                  .map((item) => ({
+                    ...item,
+                    href: normalizeExternalUrl(item.url),
+                  }))
+                  .filter((item) => item.href)
+                  .map((item) => (
+                    <a
+                      key={item.url}
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-[#e6e2da] bg-white p-4 transition hover:border-emerald-200 hover:bg-emerald-50"
+                    >
+                      <div className="text-sm font-semibold text-zinc-900">
+                        {item.title || "Recipe link"}
+                      </div>
+                      {item.site_name && (
+                        <div className="mt-1 text-xs text-zinc-500">
+                          {item.site_name}
+                        </div>
+                      )}
+                      {item.description && (
+                        <div className="mt-2 text-xs text-zinc-600">
+                          {item.description}
+                        </div>
+                      )}
+                    {item.used_ingredients &&
+                      item.used_ingredients.length > 0 && (
+                        <div className="mt-2 text-xs text-emerald-700">
+                          New ingredients: {item.used_ingredients.join(", ")}
+                        </div>
+                      )}
+                    </a>
+                  ))}
               </div>
             </div>
           </section>
