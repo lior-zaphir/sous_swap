@@ -1511,6 +1511,11 @@ export default function Home() {
                 {finalizing ? "Finalizing..." : "Finalize Recipe"}
               </button>
             </div>
+            {finalizing && (
+              <div className="flex items-center justify-center pt-4">
+                <PixelPot size="xl" />
+              </div>
+            )}
           </>
         ) : (
           <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
