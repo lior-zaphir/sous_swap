@@ -1023,10 +1023,10 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900">
+      <div className="flex min-h-screen flex-col bg-[#f7f5f1] text-[#1f2933]">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-8 py-8 pb-16">
         <header className="flex flex-col gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-500 shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#e6e2da] bg-white px-3 py-1 text-xs font-medium text-slate-500 shadow-sm">
             {screen === "setup"
               ? "Step 1 · Load Recipe & Preferences"
               : "Step 2 · Ingredient Substitutions"}
@@ -1036,7 +1036,7 @@ export default function Home() {
               ? "SousSwap — Ingredient Substitution Setup"
               : "SousSwap — Guided Ingredient Swaps"}
           </h1>
-          <p className="max-w-2xl text-sm text-zinc-600">
+          <p className="max-w-2xl text-sm text-slate-600">
             {screen === "setup"
               ? "Paste a recipe and set your ingredient and dietary preferences to begin the serialized substitution flow."
               : "Review each ingredient in order and decide whether to keep it, swap it, or add a complementary option."}
@@ -1045,29 +1045,29 @@ export default function Home() {
 
         {screen === "setup" ? (
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <h2 className="text-lg font-semibold">Recipe</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-slate-500">
                 Provide a full recipe or paste from a site.
               </p>
               <textarea
-                className="mt-4 h-[520px] w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-relaxed outline-none focus:border-zinc-400"
+                className="mt-4 h-[520px] w-full resize-none rounded-xl border border-[#e6e2da] bg-[#faf9f6] p-4 text-sm leading-relaxed outline-none focus:border-emerald-500"
                 value={recipeText}
                 onChange={(event) => setRecipeText(event.target.value)}
               />
             </section>
 
-            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <h2 className="text-lg font-semibold">Preferences</h2>
               <div className="mt-4 space-y-5 text-sm">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Allowed ingredients
                   </label>
                   <div className="mt-2 flex gap-2">
                     <div className="relative flex-1">
                       <input
-                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                        className="w-full rounded-lg border border-[#e6e2da] bg-[#faf9f6] px-3 py-2 text-sm outline-none focus:border-emerald-500"
                         value={allowedInput}
                         onChange={(event) => setAllowedInput(event.target.value)}
                         placeholder="Search or add ingredient"
@@ -1079,12 +1079,12 @@ export default function Home() {
                         }}
                       />
                       {suggestions.length > 0 && (
-                        <div className="absolute z-10 mt-2 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
+                        <div className="absolute z-10 mt-2 w-full rounded-lg border border-[#e6e2da] bg-white shadow-[0_12px_24px_rgba(15,23,42,0.08)]">
                           {suggestions.map((item) => (
                             <button
                               key={item}
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-50"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[#f3f2ee]"
                               onClick={() => addSuggestion(item)}
                             >
                               <span className="text-zinc-900">{item}</span>
@@ -1098,7 +1098,7 @@ export default function Home() {
                     </div>
                     <button
                       type="button"
-                      className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                      className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                       onClick={addAllowed}
                     >
                       Add
@@ -1108,16 +1108,16 @@ export default function Home() {
                     {allowedIngredients.map((item) => (
                       <span
                         key={item}
-                        className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs"
+                        className="inline-flex items-center gap-2 rounded-full border border-[#e6e2da] bg-[#f7f5f1] px-3 py-1 text-xs"
                       >
                         {(() => {
                           const Icon = ingredientIcon(item);
-                          return <Icon className="h-3.5 w-3.5 text-zinc-500" />;
+                          return <Icon className="h-3.5 w-3.5 text-slate-500" />;
                         })()}
                         {item}
                         <button
                           type="button"
-                          className="text-zinc-400 hover:text-zinc-900"
+                          className="text-slate-400 hover:text-slate-900"
                           onClick={() => removeAllowed(item)}
                         >
                           ×
@@ -1128,11 +1128,11 @@ export default function Home() {
         </div>
 
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Dietary profile
                   </label>
                   <select
-                    className="mt-2 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                    className="mt-2 w-full rounded-lg border border-[#e6e2da] bg-[#faf9f6] px-3 py-2 text-sm outline-none focus:border-emerald-500"
                     value={dietIndex}
                     onChange={(event) =>
                       setDietIndex(Number(event.target.value))
@@ -1144,12 +1144,12 @@ export default function Home() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  <p className="mt-2 text-xs text-slate-500">
                     {selectedDiet.instructions}
                   </p>
                 </div>
 
-                <label className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
+                <label className="flex items-center gap-3 rounded-lg border border-[#e6e2da] bg-white px-3 py-2">
                   <input
                     type="checkbox"
                     checked={allowOutOfList}
@@ -1161,7 +1161,7 @@ export default function Home() {
                     Allow suggestions outside my list
                   </span>
                 </label>
-                <label className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
+                <label className="flex items-center gap-3 rounded-lg border border-[#e6e2da] bg-white px-3 py-2">
                   <input
                     type="checkbox"
                     checked={preloadSubstitutions}
@@ -1178,17 +1178,17 @@ export default function Home() {
           </div>
         ) : screen === "flow" ? (
           <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Stage
                   </div>
                   <h2 className="mt-2 text-xl font-semibold">
                     {stageLabel(stage)}
                   </h2>
                 </div>
-                <div className="text-xs text-zinc-500">
+              <div className="text-xs text-slate-500">
                   {flowStatus === "ready" && batchItems.length > 0
                     ? `Ingredient ${currentIndex + 1} of ${batchItems.length}`
                     : ""}
@@ -1245,9 +1245,9 @@ export default function Home() {
         </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               {flowStatus === "loading" ? (
-                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-10 text-sm text-zinc-500">
+                  <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-[#e6e2da] bg-[#f7f5f1] p-10 text-sm text-slate-500">
                   <div className="flex flex-col items-center gap-3">
                     <PixelPot size="lg" />
                     {finalizing
@@ -1278,7 +1278,7 @@ export default function Home() {
 
                   <div className="mt-4 space-y-3">
                     {batchItems[currentIndex].options.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
+                      <div className="rounded-lg border border-dashed border-[#e6e2da] bg-[#f7f5f1] p-4 text-sm text-slate-500">
                         No alternatives suggested. Keep the original ingredient.
                       </div>
                     )}
@@ -1292,7 +1292,7 @@ export default function Home() {
                       .map((opt) => (
                       <div
                         key={opt.substitute}
-                        className="rounded-xl border border-zinc-200 bg-white p-4"
+                        className="rounded-xl border border-[#e6e2da] bg-white p-4"
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -1311,18 +1311,18 @@ export default function Home() {
                             )}
                           </div>
                           <div className="flex flex-col gap-2">
-                            <button
-                              type="button"
-                              className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                               onClick={() =>
                                 applyChoice("swap", opt.substitute)
                               }
                             >
                               Swap
                             </button>
-                            <button
-                              type="button"
-                              className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700"
+                                <button
+                                  type="button"
+                                  className="rounded-lg border border-[#e6e2da] px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-400"
                               onClick={() =>
                                 applyChoice("add", opt.substitute)
                               }
@@ -1354,7 +1354,7 @@ export default function Home() {
         ) : screen === "review" ? (
           <>
             <section className="grid gap-6 lg:grid-cols-[0.6fr_0.9fr]">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-semibold">Review your choices</h2>
@@ -1379,13 +1379,13 @@ export default function Home() {
                       : item.ingredient_name;
                     return (
                       <div key={`${item.stage}-${item.ingredient_name}`}>
-                        {item.stage !== previousStage && (
-                          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                      {item.stage !== previousStage && (
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             {stageLabel(item.stage)}
                           </div>
                         )}
                         <div className="mt-2 flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-zinc-900">
+                        <div className="text-sm font-semibold text-slate-900">
                             {item.ingredient_name}
                           </div>
                           <button
@@ -1394,7 +1394,7 @@ export default function Home() {
                             className={`rounded-full border px-3 py-1 text-xs ${
                               decision
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                : "border-zinc-200 bg-white text-zinc-700"
+                              : "border-[#e6e2da] bg-white text-slate-700"
                             }`}
                           >
                             {bubbleText}
@@ -1407,7 +1407,7 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-6">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
                   {selectedReviewItem ? (
                     <>
                       <div className="flex items-center justify-between">
@@ -1415,14 +1415,14 @@ export default function Home() {
                           <h3 className="text-lg font-semibold">
                             {selectedReviewItem.ingredient_name}
                           </h3>
-                          <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-slate-500">
                             {selectedReviewItem.role} ·{" "}
                             {selectedReviewItem.importance}
                           </p>
                         </div>
                         <button
                           type="button"
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700"
+                        className="rounded-lg border border-[#e6e2da] px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-400"
                           onClick={() =>
                             applyReviewDecision(selectedReviewItem, "keep")
                           }
@@ -1439,22 +1439,22 @@ export default function Home() {
                               isDirectSubstitution(opt.reason)
                           )
                           .map((opt) => (
-                            <div
-                              key={opt.substitute}
-                              className="rounded-xl border border-zinc-200 bg-white p-4"
-                            >
+                          <div
+                            key={opt.substitute}
+                            className="rounded-xl border border-[#e6e2da] bg-white p-4"
+                          >
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="text-sm font-semibold text-zinc-900">
                                     {opt.substitute}
                                   </div>
                                   {opt.reason && (
-                                    <p className="mt-1 text-xs text-zinc-500">
+                                  <p className="mt-1 text-xs text-slate-500">
                                       {opt.reason}
                                     </p>
                                   )}
                                   {opt.adjustment && (
-                                    <p className="mt-2 text-xs text-zinc-500">
+                                  <p className="mt-2 text-xs text-slate-500">
                                       Adjustment: {opt.adjustment}
                                     </p>
                                   )}
@@ -1462,7 +1462,7 @@ export default function Home() {
                                 <div className="flex flex-col gap-2">
                                   <button
                                     type="button"
-                                    className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                                     onClick={() =>
                                       applyReviewDecision(
                                         selectedReviewItem,
@@ -1475,7 +1475,7 @@ export default function Home() {
                                   </button>
                                   <button
                                     type="button"
-                                    className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-700"
+                                  className="rounded-lg border border-[#e6e2da] px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-400"
                                     onClick={() =>
                                       applyReviewDecision(
                                         selectedReviewItem,
@@ -1504,7 +1504,7 @@ export default function Home() {
             <div className="flex justify-center">
               <button
                 type="button"
-                className="w-full max-w-2xl rounded-lg bg-zinc-900 px-6 py-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full max-w-2xl rounded-lg bg-emerald-600 px-6 py-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={finalizeRecipe}
                 disabled={finalizing}
               >
@@ -1519,7 +1519,7 @@ export default function Home() {
           </>
         ) : (
           <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <h2 className="text-lg font-semibold">Final Recipe</h2>
               <p className="mt-1 text-sm text-zinc-500">
                 Review the updated ingredients and instructions.
@@ -1564,7 +1564,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#e6e2da] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
               <h3 className="text-base font-semibold text-zinc-900">
                 Instructions
               </h3>
@@ -1589,7 +1589,7 @@ export default function Home() {
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-2">
               <button
                 type="button"
-                className="w-full rounded-lg bg-zinc-900 px-5 py-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-emerald-600 px-5 py-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={createSession}
                 disabled={status === "loading"}
               >
